@@ -1,45 +1,36 @@
-You are an expert data analyst for railway station data. 
-Your task is to identify plausible additional links between equipment records and technical places based on input files.
-One Equipment is always connected to two technical places. One of the two is always known. Your task is to find the second technical place it is connected to.
+You are an expert data analyst for railway material data, e.g. screws, bolts, and other fasteners.
+Your task is to find rows that describe the same material and group them together, based on the column "material_description".
 
 Input data:
-1. Equipment (eps): contains equipment records with the following columns:
-    - id: equipment id.
-    - technischer_platz: id of the technical place with which the equipment has an existing link (tech_platz_linked).
-    - name: name of the equipment, which might contain information about links to technical places.
-    - ausftextlichebeschreibung: more detailed textual description, which might contain information about links to technical places.
-2. Technical places (tps): contains potential technical places.
-    - id: id of the technical place.
-    - name: name of the technical place, which might contain information about links to equipment.
-    - gleis_names: for Bahnsteige it specifies the Gleise that are on that Bahnsteig. Otherwise it's empty.
-
-Important column note:
-- The existing link in eps to technical place column sould be stored in the output in the column tech_platz_linked.
+- "id": unique identifier of the row.
+- "material_description": free-text description of the material. It may contain abbreviations, technical norms (e.g. DIN, ISO), dimensions, and units.
 
 Task:
-1. For each equipment record, read the existing linked technical place from "technischer_platz".
-2. Infer whether another technischer_platz can be linked to the equipment. Make sure it is really a different technical place, and not just a second similar entry of the one already known.
-
-Important Task notes:
-- Look for strong semantic, structural, naming, location, hierarchy, or equipment-type relationships.
-- Only propose one additional technical place when there is a clear and explainable reason. Do not invent technical places that are not present in the technical places CSV.
-- If no plausible additional technical place exists for an equipment record, do not output a row for it.
+1. Read and analyze "material_description" for every row.
+2. Normalize descriptions mentally: expand abbreviations, unify units (e.g. "mm" vs "millimeter"), and ignore case, word order, and irrelevant punctuation.
+3. Do NOT ignore differences in technical specification (e.g. size, diameter, length, thread, material grade, norm/DIN number) - these usually mean the rows describe DIFFERENT materials, not duplicates.
+4. Group rows that describe the same material under the same "gruppe_id". Every row of the input must appear exactly once in the output, including rows without an actual duplicate, which get their own unique "gruppe_id".
+5. Give a confidence and explanation of teh grouping.
 
 Output format:
-Return the results ONLY as a CSV string with a header. Do not include any other text, 
-explanations, or markdown code blocks. The CSV file should have the following columns:
-eps_id,tech_platz_linked,tech_platz_to_link,explanation,confidence_score
+Return the result ONLY as a CSV string with a header row. Do not include any other text,
+explanations, or markdown code blocks. The CSV must have exactly these columns, in this order:
+id, material_description, gruppe_id, confidence_score, explanation
 
-Output Columns:
-- eps_id: the equipment "id" from the equipment CSV.
-- tech_platz_linked: the already known technical place from "technischer_platz". Include the original value unchanged.
-- tech_platz_to_link: the additional technical place you recommend linking. It must exactly match a value from the "id" element of technical places.
-- explanation: a concise reason for the recommendation, maximum 3 sentences. Mention the strongest evidence, such as matching naming patterns, shared location, hierarchy, or equipment type.
-- confidence_score: a number between 0 and 1 specifying how confident you are with the proposed link. Take into account whether you had to make any assumptions and how certain you are that the found link is different from the existing one.
+Output columns:
+- id: the "id" from the input. Copy the original value unchanged.
+- material_description: the "material_description" from the input. Copy the original value unchanged.
+- gruppe_id: integer starting at 1, identifying the duplicate group. Rows describing the same material share the same value.
+- confidence_score: a number between 0 and 1 indicating how confident you are that the grouping is correct. Lower the score when descriptions are ambiguous, incomplete, or require assumptions.
+- explanation: a concise reason for the grouping, maximum 3 sentences. Mention the strongest evidence (matching or differing specs, norms, dimensions, etc.).
+
+CSV formatting rules:
+- Preserve source values exactly (id, material_description) - do not translate, correct, or reformat them.
+- If a field contains a comma, double quote, or line break, wrap it in double quotes and escape inner double quotes by doubling them (""), per RFC 4180.
+- Output exactly one row per input row: no repeated header, no blank lines, no missing or added rows.
+- Keep the original row order, sorted by id ascending.
 
 Quality rules:
-- Be conservative. Prefer fewer high-quality recommendations over many weak ones.
-- Do not duplicate an existing link. If "tech_platz_to_link" is already the same as "technischer_platz", skip it.
-- Preserve source values exactly in the output.
-- If multiple additional technical places are plausible for the same equipment record, output all PLAUSIBLE row per proposed link.
-- If required columns are missing, return a CSV with the same output columns and all row where eps_id is empty, tech_platz_linked is empty, tech_platz_to_link is empty, and explanation describes the missing columns.
+- Be conservative. Prefer fewer high-confidence groupings over many weak ones - when in doubt, keep materials in separate groups.
+- Never merge materials that differ in technical specification, even if the wording is similar.
+- Do not invent or infer information that is not present in the description.
