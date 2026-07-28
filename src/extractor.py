@@ -11,24 +11,21 @@ class DataExtractor:
         self.debug = debug
     
 
-    def extract(self, context_data: dict) -> dict:
+    def extract(self, data: dict) -> dict:
         """
         Extracts connections between different datasets.
         """
         # 1. Define prompts
         system_prompt = Path(SYSTEM_PROMPT_PATH).read_text(encoding="utf-8").strip()
         
-        # Build context string
-        context_str = "Analyze the following datasets for connections:\n"
-        if "tps" in context_data:
-            context_str += f"\nTPS Data:\n{context_data['tps']}\n"
-        if "equipment" in context_data:
-            context_str += f"\nEquipment Data:\n{context_data['equipment']}\n" 
+        query = "Analyze the following datasets for duplicates:\n"
+        query += f"\n{data}\n"
 
         # 2. Query LLM
-        response = self.client.query(context_str, system_prompt=system_prompt)
+        response = self.client.query(query, system_prompt=system_prompt)
 
         if self.debug:
+            print("[DEBUG] Query:\n", query)
             print("[DEBUG] LLM response:\n", response)
         
         # 3. Process answer
