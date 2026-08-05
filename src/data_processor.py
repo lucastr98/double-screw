@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import os
 
-INPUT_TABLE_NAME = "dubletten_analyse_dummy"
+INPUT_TABLE_NAME = "dubletten_analyse"
 RENAME_COLUMNS = {
     "Dublettenset Nr": "duplicate_id",
     "Material Bez": "material_description",
@@ -22,7 +22,7 @@ class DataProcessor:
             raise FileNotFoundError(f"File not found: {path}") 
         
         try:
-            df = pd.read_csv(path, sep=";")
+            df = pd.read_csv(path, sep=";", encoding="latin-1")
             filtered_df = df[columns]
             filtered_df.rename(columns=RENAME_COLUMNS, inplace=True)
             if self.ids is not None and ID_COL in filtered_df.columns:
@@ -32,7 +32,7 @@ class DataProcessor:
         except Exception as e:
             raise RuntimeError(f"Error processing {filename}: {e}")
 
-    def get_duplicateset_data(self, duplicate_id: int) -> dict:
+    def get_duplicateset_data(self, duplicate_id: int) -> tuple[pd.DataFrame, dict]:
         """Returns data for a specific duplicate_id."""
         if ID_COL not in self.data.columns:
             raise ValueError(f"{ID_COL} column is missing in the data.")
@@ -43,6 +43,7 @@ class DataProcessor:
 
         filtered_data = filtered_data.reset_index(drop=True)
         filtered_data.insert(0, "id", range(len(filtered_data)))
-        filtered_data = filtered_data.drop(columns=[ID_COL])
 
-        return filtered_data.to_json(orient="records")
+        filtered_data_json = filtered_data.drop_duplicates('material_description').drop(columns=['duplicate_id'])
+
+        return filtered_data, filtered_data_json.to_json(orient="records")

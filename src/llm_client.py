@@ -22,7 +22,7 @@ class LLMClient:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ],
-            "temperature": 0.0,
+            "temperature": 1.0,
             "stream": False
         }
         try:

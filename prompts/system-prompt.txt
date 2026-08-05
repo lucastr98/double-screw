@@ -10,7 +10,7 @@ Task:
 2. Normalize descriptions mentally: expand abbreviations, unify units (e.g. "mm" vs "millimeter"), and ignore case, word order, and irrelevant punctuation.
 3. Do NOT ignore differences in technical specification (e.g. size, diameter, length, thread, material grade, norm/DIN number) - these usually mean the rows describe DIFFERENT materials, not duplicates.
 4. Group rows that describe the same material under the same "gruppe_id". Every row of the input must appear exactly once in the output, including rows without an actual duplicate, which get their own unique "gruppe_id".
-5. Give a confidence and explanation of teh grouping.
+5. Give a confidence and explanation of the grouping.
 
 Output format:
 Return the result ONLY as a CSV string with a header row. Do not include any other text,
@@ -31,6 +31,10 @@ CSV formatting rules:
 - Keep the original row order, sorted by id ascending.
 
 Quality rules:
-- Be conservative. Prefer fewer high-confidence groupings over many weak ones - when in doubt, keep materials in separate groups.
-- Never merge materials that differ in technical specification, even if the wording is similar.
+- Avoid being overly cautious or creating artificial separations and groups based on minor, non-semantic differences or formatting discrepancies. For example:
+  * Units of measure: some entries might include units of measure (e.g., "3.5m", "1000 kg", "1,5 m") while others do not (e.g., "3.5", "1000", "1,5").
+  * Abbreviations and spelling: variations in spelling, typos, abbreviations (e.g., "Gl. 1" vs. "Gleis 1", "Bstg." vs. "Bahnsteig", "Hbf" vs. "Hauptbahnhof"), capitalization, hyphenation, and spacing differences should be resolved as functionally identical if they refer to the same physical object or level.
+  * Punctuation: differences in punctuation within a description (e.g., a comma, period, or space used as a separator or delimiter between terms) must NOT be treated as a semantic distinction.
+  * Synonyms and German spellings: semantically equivalent words (e.g., "Fahrstuhl" vs. "Aufzug") or different representations of umlauts (ä/ö/ü vs. ae/oe/ue) should be recognized as matching.
+  These cases should be treated as matching if they describe the same physical characteristics or semantic connections.
 - Do not invent or infer information that is not present in the description.
